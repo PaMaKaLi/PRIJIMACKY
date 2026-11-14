@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Prijímačky LF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<script src="loader.js"></script>
+<title>Prijímačky LF UPJŠ – biológia a chémia</title>
+<style>
+:root{
+  --bg:#f4f6f8;--card:#fff;--ink:#14212b;--muted:#5d6b78;--line:#dde3e9;
+  --bio:#0f766e;--bio-soft:#e0f2ef;--chem:#4f46e5;--chem-soft:#e8e7fd;
+  --ok:#15803d;--ok-soft:#dcfce7;--bad:#c2410c;--bad-soft:#ffedd5;--miss:#b45309;
+  --acc:var(--bio);--acc-soft:var(--bio-soft);
+  --r:14px;--shadow:0 1px 2px rgba(16,24,40,.06),0 2px 8px rgba(16,24,40,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0e1419;--card:#172028;--ink:#e6edf3;--muted:#93a1ae;--line:#2a3743;
+  --bio:#2dd4bf;--bio-soft:#123a36;--chem:#a5b4fc;--chem-soft:#24264d;
+  --ok:#4ade80;--ok-soft:#14321f;--bad:#fb923c;--bad-soft:#3a2312;--miss:#fbbf24;}
+  .qimg img{filter:invert(.92) hue-rotate(180deg)}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body.chem{--acc:var(--chem);--acc-soft:var(--chem-soft)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+#app{max-width:760px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));min-height:100vh}
+h1{font-size:22px;margin:6px 2px 2px}
+h2{font-size:18px;margin:18px 2px 8px}
+.sub{color:var(--muted);font-size:14px;margin:0 2px 12px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin:10px 0}
+.row{display:flex;gap:10px;align-items:center}
+.grow{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:12px;background:var(--acc);color:#fff;font-weight:600;min-height:48px}
+@media (prefers-color-scheme:dark){.btn{color:#0e1419}}
+.btn.ghost{background:transparent;color:var(--acc);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.btn.soft{background:var(--acc-soft);color:var(--acc)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 13px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);font-size:14px}
+.chip.on{background:var(--acc-soft);box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc);font-weight:600}
+.subj{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sc{border-radius:var(--r);padding:16px;color:#fff;min-height:122px;display:flex;flex-direction:column;justify-content:space-between;text-align:left}
+.sc.bio{background:linear-gradient(135deg,#0f766e,#14b8a6)}
+.sc.chem{background:linear-gradient(135deg,#4338ca,#818cf8)}
+.sc b{font-size:19px}
+.sc small{opacity:.92;font-size:13px}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.3);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:#fff;border-radius:99px}
+.pbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex}
+.pbar i{display:block;height:100%}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;text-align:left;min-height:86px}
+.tile b{display:block;font-size:16px}
+.tile span{color:var(--muted);font-size:13px}
+.tile .ic{font-size:22px;margin-bottom:4px;display:block}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav .in{display:flex;max-width:760px;width:100%}
+nav button{flex:1;padding:9px 0 10px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .ic{font-size:20px;line-height:1}
+nav button.on{color:var(--acc);font-weight:600}
+.top{position:sticky;top:env(safe-area-inset-top);z-index:4;background:var(--bg);padding:6px 0 8px;margin:-12px -2px 4px}
+.qhead{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.tag{font-size:12px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--acc-soft);color:var(--acc)}
+.tag.bio{background:var(--bio-soft);color:var(--bio)}.tag.chem{background:var(--chem-soft);color:var(--chem)}
+.qimg{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:10px;overflow-x:auto;position:relative}
+@media (prefers-color-scheme:dark){.qimg{background:#121a21}}
+.qimg .wrap{position:relative;display:inline-block;width:100%}
+.qimg img{display:block;width:100%;height:auto;image-rendering:auto}
+.qimg.zoom .wrap{width:auto}
+.qimg.zoom img{width:auto;max-width:none;height:auto}
+.mask{position:absolute;background:var(--acc-soft);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:12px;font-weight:700;overflow:hidden}
+.hint{font-size:12px;color:var(--muted);text-align:right;margin:4px 2px 0}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.opt{height:58px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line),var(--shadow);font-size:22px;font-weight:700;position:relative}
+.opt.sel{background:var(--acc);color:#fff;box-shadow:none}
+@media (prefers-color-scheme:dark){.opt.sel{color:#0e1419}}
+.opt.r-ok{background:var(--ok);color:#fff;box-shadow:none}
+.opt.r-miss{background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 2px var(--ok)}
+.opt.r-bad{background:var(--bad);color:#fff;box-shadow:none}
+.opt.r-neu{opacity:.55}
+.opt small{position:absolute;left:0;right:0;bottom:4px;font-size:10px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:4px}
+.res{border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:15px}
+.res.ok{background:var(--ok-soft);color:var(--ok)}
+.res.bad{background:var(--bad-soft);color:var(--bad)}
+.res b{font-size:17px}
+.actions{display:flex;gap:10px;margin-top:12px}
+.actions .btn{flex:1}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;color:var(--ink)}
+.timer.low{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.gcell{height:40px;border-radius:9px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);font-size:13px;font-weight:600}
+.gcell.ans{background:var(--acc-soft);box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc)}
+.gcell.cur{outline:2.5px solid var(--ink);outline-offset:1px}
+.gcell.g-ok{background:var(--ok-soft);color:var(--ok);box-shadow:none}
+.gcell.g-part{background:#fef3c7;color:#92400e;box-shadow:none}
+.gcell.g-bad{background:var(--bad-soft);color:var(--bad);box-shadow:none}
+.big{font-size:44px;font-weight:800;letter-spacing:-1px}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv:last-child{border:0}
+.kv span{color:var(--muted)}
+.sect{padding:10px 0;border-bottom:1px solid var(--line)}
+.sect:last-child{border:0}
+.sect .t{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+.sect .t span{color:var(--muted);font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(10,15,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--card);width:100%;max-width:760px;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));max-height:86vh;overflow:auto}
+textarea{width:100%;min-height:110px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);padding:10px;font:12px/1.4 ui-monospace,Menlo,monospace}
+.center{text-align:center}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.spin{width:36px;height:36px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--acc);animation:sp 1s linear infinite;margin:40px auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30}
+</style>
+</head>
+<body>
+<div id="app"><div class="spin"></div><p class="center muted">Načítavam otázky…</p></div>
+<nav id="nav" hidden><div class="in">
+  <button data-go="home"><span class="ic">⌂</span>Domov</button>
+  <button data-go="practice"><span class="ic">✎</span>Precvičovať</button>
+  <button data-go="test"><span class="ic">⏱</span>Test</button>
+  <button data-go="stats"><span class="ic">▤</span>Štatistiky</button>
+</div></nav>
+
+<script>
+(function(){
+"use strict";
+const SUBJ = {bio:{name:'Biológia',short:'BIO'}, chem:{name:'Chémia',short:'CHE'}};
+const LET = 'abcdefgh';
+const STORE = 'upjs-lf-trener-v1';
+const D = {};           // data by subject
+const QI = {};          // index: subj -> n -> question obj
+let P = load();         // progress
+let view = 'home', S = null;  // current session
+const app = document.getElementById('app');
+
+/* ---------- storage ---------- */
+function blank(){ return {q:{}, tests:[], set:{zoom:false}, run:null}; }
+function load(){ try{ const s = localStorage.getItem(STORE); if(s){ const p = JSON.parse(s); return Object.assign(blank(), p); } }catch(e){} return blank(); }
+function save(){ try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){} }
+
+/* ---------- data ---------- */
+function ingest(d){
+  D[d.subject] = d; QI[d.subject] = {};
+  d.items = d.q.map(r => ({s:d.subject, n:r[0], img:r[1], w:r[2], h:r[3], key:(r[6]?'':r[4]), mask:r[5], nokey:!!r[6],
+    sect: d.sections.findIndex(x => r[0] >= x.from && r[0] <= x.to)}));
+  d.items.forEach(it => QI[d.subject][it.n] = it);
+}
+let BUNDLE = null;
+function ingestBundle(buf){
+  const u8 = new Uint8Array(buf);
+  const hl = new DataView(buf).getUint32(0, true);
+  const head = JSON.parse(new TextDecoder().decode(u8.subarray(4, 4+hl)));
+  BUNDLE = u8.subarray(4+hl);
+  for(const s of ['bio','chem']){
+    const d = head[s];
+    D[s] = d; QI[s] = {};
+    d.items = d.q.map(r => ({s, n:r[0], off:r[1], len:r[2], w:r[3], h:r[4], key:(r[7]?'':r[5]), mask:r[6], nokey:!!r[7],
+      sect: d.sections.findIndex(x => r[0] >= x.from && r[0] <= x.to)}));
+    d.items.forEach(it => QI[s][it.n] = it);
+  }
+}
+async function boot(){
+  try{
+    if(window.__PWA){ const buf = await window.__PWA(); if(!buf) return; ingestBundle(buf); }
+    else if(window.__DATA){ ingest(window.__DATA.bio); ingest(window.__DATA.chem); }
+    else{
+      const [b,c] = await Promise.all(['bio','chem'].map(s => fetch('data_'+s+'.json').then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })));
+      ingest(b); ingest(c);
+    }
+  }catch(e){
+    app.innerHTML = '<div class="card"><b>Otázky sa nepodarilo načítať.</b><p class="muted small">Skús stránku obnoviť. ('+esc(String(e))+')</p></div>';
+    return;
+  }
+  document.getElementById('nav').hidden = false;
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.go));
+  if(P.run && P.run.end && Date.now() < P.run.end + 1000*60*60*6) { /* unfinished test */ }
+  go('home');
+}
+
+/* ---------- helpers ---------- */
+function imgSrc(it){
+  if(it.img) return 'data:image/webp;base64,'+it.img;
+  if(!it._url) it._url = URL.createObjectURL(new Blob([BUNDLE.subarray(it.off, it.off+it.len)], {type:'image/webp'}));
+  return it._url;
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function key(it){ return it.s+':'+it.n; }
+function st(it){ return P.q[key(it)]; }
+function isMC(it){ return it.key !== null && it.key !== undefined; }
+function mastered(r){ return r && r.k >= 2; }
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
+function judge(it, sel){ // returns number of correctly judged options (0..8)
+  let k = 0; for(const L of LET){ if(sel.includes(L) === it.key.includes(L)) k++; } return k;
+}
+function record(it, ok){
+  const r = P.q[key(it)] || (P.q[key(it)] = {a:0,c:0,k:0,l:0,t:0});
+  r.a++; if(ok){ r.c++; r.k++; r.l=1; } else { r.k=0; r.l=-1; } r.t = Date.now();
+}
+function setTheme(s){ document.body.classList.toggle('chem', s==='chem'); }
+function fmtTime(ms){ ms=Math.max(0,ms); const t=Math.floor(ms/1000), h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=t%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0'); }
+function pts(x){ return (Math.round(x*10)/10).toLocaleString('sk-SK'); }
+function counts(s, sect){
+  const items = D[s].items.filter(it => sect==null || it.sect===sect);
+  let seen=0, mast=0, wrong=0;
+  for(const it of items){ const r=st(it); if(r){ seen++; if(mastered(r)) mast++; else if(r.l===-1) wrong++; } }
+  return {total:items.length, seen, mast, wrong};
+}
+
+/* ---------- navigation ---------- */
+let timerInt = null;
+function go(v, opts){
+  clearInterval(timerInt); timerInt = null;
+  if(view==='testrun' && v!=='testrun' && P.run && !opts?.force){ /* keep running test saved */ }
+  view = v;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.go === (v==='quiz'?'practice':v==='testrun'||v==='result'?'test':v)));
+  window.scrollTo(0,0);
+  ({home, practice, test, stats, quiz, testrun, result})[v](opts);
+}
+
+/* ---------- HOME ---------- */
+function home(){
+  setTheme('bio');
+  const c = {bio:counts('bio'), chem:counts('chem')};
+  const wrongAll = c.bio.wrong + c.chem.wrong;
+  const last = P.tests[P.tests.length-1];
+  app.innerHTML = `
+  <h1>Prijímačky na LF UPJŠ</h1>
+  <p class="sub">Modelové otázky z biológie a chémie (1500 + 1500)</p>
+  <div class="subj">
+    ${['bio','chem'].map(s => `<button class="sc ${s}" data-s="${s}">
+      <div><b>${SUBJ[s].name}</b><br><small>${c[s].seen} z ${c[s].total} prejdených</small></div>
+      <div><small>Zvládnuté ${c[s].mast} · chyby ${c[s].wrong}</small>
+      <div class="bar"><i style="width:${(100*c[s].mast/c[s].total).toFixed(1)}%"></i></div></div></button>`).join('')}
+  </div>
+  ${P.run ? `<div class="card row"><div class="grow"><b>Rozpracovaný test</b><div class="muted small">Zostáva ${fmtTime(P.run.end-Date.now())}</div></div><button class="btn" id="resume">Pokračovať</button></div>`:''}
+  <h2>Čo chceš robiť?</h2>
+  <div class="tiles">
+    <button class="tile" data-a="practice"><span class="ic">✎</span><b>Precvičovať</b><span>Otázky s okamžitým vyhodnotením</span></button>
+    <button class="tile" data-a="test"><span class="ic">⏱</span><b>Ostrý test</b><span>200 otázok, 150 minút</span></button>
+    <button class="tile" data-a="mist" ${wrongAll?'':'disabled'}><span class="ic">↺</span><b>Moje chyby</b><span>${wrongAll ? wrongAll+' otázok na zopakovanie' : 'Zatiaľ žiadne chyby'}</span></button>
+    <button class="tile" data-a="calc"><span class="ic">∑</span><b>Príklady z chémie</b><span>Výpočty a rovnice s výsledkom</span></button>
+  </div>
+  ${last ? `<div class="card"><div class="row"><div class="grow"><b>Posledný test</b><div class="muted small">${new Date(last.d).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})} · ${last.len} otázok</div></div><div class="center"><div style="font-size:24px;font-weight:800">${pts(last.p)}</div><div class="muted small">z ${last.max} b.</div></div></div></div>`:''}
+  <p class="muted small" style="margin-top:18px">Pokrok sa ukladá v tomto zariadení a prehliadači. Zálohu nájdeš v Štatistikách.</p>`;
+  app.querySelectorAll('.sc').forEach(b => b.onclick = () => go('practice', {subj:b.dataset.s}));
+  app.querySelectorAll('.tile').forEach(b => b.onclick = () => {
+    const a = b.dataset.a;
+    if(a==='practice') go('practice');
+    else if(a==='test') go('test');
+    else if(a==='mist') startPractice({subj:'mix', sect:null, filter:'wrong', order:'rand'});
+    else if(a==='calc') go('practice', {subj:'chem', calc:true});
+  });
+  const r = document.getElementById('resume'); if(r) r.onclick = () => go('testrun');
+}
+
+/* ---------- PRACTICE SETUP ---------- */
+let PS = {subj:'bio', sect:null, filter:'all', order:'rand'};
+function practice(o){
+  if(o?.subj){ PS.subj = o.subj; PS.sect = null; }
+  if(o?.calc){ PS.subj='chem'; PS.sect = D.chem.sections.findIndex(x=>x.from===451); PS.filter='all'; }
+  setTheme(PS.subj==='chem'?'chem':'bio');
+  const secs = PS.subj==='mix' ? [] : D[PS.subj].sections;
+  const pool = buildPool(PS);
+  app.innerHTML = `
+  <h1>Precvičovanie</h1>
+  <p class="sub">Po každej otázke hneď uvidíš, ako si odpovedal.</p>
+  <div class="card">
+    <div class="small muted" style="margin-bottom:6px">Predmet</div>
+    <div class="chips" id="c-subj">
+      ${[['bio','Biológia'],['chem','Chémia'],['mix','Oba predmety']].map(([v,t])=>`<button class="chip ${PS.subj===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
+    </div>
+    ${secs.length?`<div class="small muted" style="margin:14px 0 6px">Okruh</div>
+    <div class="chips" id="c-sect">
+      <button class="chip ${PS.sect==null?'on':''}" data-v="">Všetky</button>
+      ${secs.map((x,i)=>`<button class="chip ${PS.sect===i?'on':''}" data-v="${i}">${esc(x.name)} <span class="muted">${x.from}–${x.to}</span></button>`).join('')}
+    </div>`:''}
+    <div class="small muted" style="margin:14px 0 6px">Ktoré otázky</div>
+    <div class="chips" id="c-filter">
+      ${[['all','Všetky'],['new','Nové'],['wrong','Moje chyby'],['notm','Nezvládnuté']].map(([v,t])=>`<button class="chip ${PS.filter===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
+    </div>
+    <div class="small muted" style="margin:14px 0 6px">Poradie</div>
+    <div class="chips" id="c-order">
+      ${[['rand','Náhodne'],['seq','Podľa čísla']].map(([v,t])=>`<button class="chip ${PS.order===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
+    </div>
+  </div>
+  <button class="btn block" id="go" ${pool.length?'':'disabled'}>Začať · ${pool.length} otázok</button>
+  <p class="muted small" style="margin-top:12px">Pri každej otázke označ <b>všetky</b> správne možnosti. Správna môže byť jedna, viac alebo aj žiadna. „Zvládnutá“ je otázka, ktorú si zodpovedal úplne správne dvakrát po sebe.</p>`;
+  const bind = (id, f) => app.querySelectorAll('#'+id+' .chip').forEach(b => b.onclick = () => { f(b.dataset.v); practice(); });
+  bind('c-subj', v => { PS.subj=v; PS.sect=null; });
+  bind('c-sect', v => PS.sect = v===''?null:+v);
+  bind('c-filter', v => PS.filter=v);
+  bind('c-order', v => PS.order=v);
+  document.getElementById('go').onclick = () => startPractice(PS);
+}
+function buildPool(o){
+  const subs = o.subj==='mix' ? ['bio','chem'] : [o.subj];
+  let pool = [];
+  for(const s of subs) pool = pool.concat(D[s].items.filter(it => (o.sect==null || it.sect===o.sect)));
+  pool = pool.filter(it => { const r = st(it);
+    if(o.filter==='new') return !r; if(o.filter==='wrong') return r && r.l===-1; if(o.filter==='notm') return !mastered(r); return true; });
+  return pool;
+}
+function startPractice(o){
+  let pool = buildPool(o);
+  if(!pool.length){ toast('Žiadne otázky pre tento výber'); return; }
+  if(o.order==='rand') shuffle(pool);
+  S = {mode:'practice', list:pool, i:0, sel:[], done:false, okN:0, cnt:0};
+  go('quiz');
+}
+
+/* ---------- QUESTION RENDER ---------- */
+function imgHTML(it, revealed){
+  const masks = (!revealed && it.mask) ? it.mask.map(m => `<div class="mask" style="left:${m[0]*100}%;top:${m[1]*100}%;width:${m[2]*100}%;height:${m[3]*100}%">?</div>`).join('') : '';
+  return `<div class="qimg ${P.set.zoom?'zoom':''}" id="qimg"><div class="wrap"><img alt="Otázka ${it.n}" src="${imgSrc(it)}" width="${it.w}" height="${it.h}">${masks}</div></div>
+  <div class="hint">Ťukni na otázku pre ${P.set.zoom?'zmenšenie':'zväčšenie'}</div>`;
+}
+function bindZoom(){ const q=document.getElementById('qimg'); if(q) q.onclick = () => { P.set.zoom=!P.set.zoom; save(); q.classList.toggle('zoom',P.set.zoom); q.nextElementSibling.textContent='Ťukni na otázku pre '+(P.set.zoom?'zmenšenie':'zväčšenie'); }; }
+function optsHTML(it, sel, evald){
+  return `<div class="opts">${[...LET].map(L => {
+    let c = '', tag='';
+    if(evald){ const k = it.key.includes(L), s = sel.includes(L);
+      if(k && s) c='r-ok'; else if(k && !s){ c='r-miss'; tag='<small>chýba</small>'; } else if(!k && s){ c='r-bad'; tag='<small>zle</small>'; } else c='r-neu'; }
+    else if(sel.includes(L)) c='sel';
+    return `<button class="opt ${c}" data-l="${L}" ${evald?'disabled':''}>${L}${tag}</button>`; }).join('')}</div>`;
+}
+function sectName(it){ return D[it.s].sections[it.sect]?.name || ''; }
+
+/* ---------- PRACTICE QUIZ ---------- */
+function quiz(){
+  const it = S.list[S.i];
+  if(!it){ return practiceDone(); }
+  setTheme(it.s);
+  const head = `<div class="top"><div class="qhead"><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="quit">✕</button>
+    <span class="tag ${it.s}">${SUBJ[it.s].short}</span><span class="grow">Otázka ${it.n} · ${esc(sectName(it))}</span><span>${S.i+1}/${S.list.length}</span></div></div>`;
+  if(!isMC(it)) return calcCard(it, head);
+  const ev = S.done;
+  let res = '';
+  if(ev){
+    const k = judge(it, S.sel), full = k===8;
+    res = `<div class="res ${full?'ok':'bad'}"><b>${full?'Správne!':'Nie celkom'}</b> · ${k}/8 možností správne · ${pts(k/2)} z 4 b.<br>
+      <span class="small">Správne odpovede: <b>${it.key ? [...it.key].join(', ') : 'žiadna'}</b></span>${it.nokey?'<br><span class="small">Pozor: v kľúči knihy je pri tejto otázke prázdne miesto, preto ju appka berie ako „žiadna správna“.</span>':''}</div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>správne označená</span><span><i style="background:var(--ok-soft);box-shadow:inset 0 0 0 2px var(--ok)"></i>mala byť označená</span><span><i style="background:var(--bad)"></i>označená zle</span></div>`;
+  }
+  app.innerHTML = head + imgHTML(it, true) + optsHTML(it, S.sel, ev) + res +
+    `<div class="actions">${ev ? `<button class="btn" id="next">Ďalšia otázka →</button>` :
+      `<button class="btn ghost" id="skip">Preskočiť</button><button class="btn" id="eval">Vyhodnotiť</button>`}</div>`;
+  bindZoom();
+  document.getElementById('quit').onclick = () => practiceDone();
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => { const L=b.dataset.l; S.sel = S.sel.includes(L)? S.sel.filter(x=>x!==L) : [...S.sel, L].sort(); b.classList.toggle('sel', S.sel.includes(L)); const e=document.getElementById('eval');  });
+  const e = document.getElementById('eval'); if(e) e.onclick = evalPractice;
+  const sk = document.getElementById('skip'); if(sk) sk.onclick = () => { S.i++; S.sel=[]; S.done=false; quiz(); window.scrollTo(0,0); };
+  const n = document.getElementById('next'); if(n) n.onclick = nextPractice;
+}
+function evalPractice(){ const it=S.list[S.i]; const ok = judge(it,S.sel)===8; record(it, ok); S.cnt++; if(ok) S.okN++; S.done=true; save(); quiz(); }
+function nextPractice(){ S.i++; S.sel=[]; S.done=false; S.rev=false; quiz(); window.scrollTo(0,0); }
+function calcCard(it, head){
+  const rev = !!S.rev;
+  app.innerHTML = head + `<p class="muted small" style="margin:4px 2px 8px">Vypočítaj a potom si skontroluj výsledok.${it.mask?'':' (Výsledok je uvedený priamo v zadaní.)'}</p>` + imgHTML(it, rev) +
+    `<div class="actions">${!rev ? `<button class="btn ghost" id="skip">Preskočiť</button><button class="btn" id="show">Ukázať výsledok</button>` :
+      `<button class="btn ghost" id="no">Nevedel som</button><button class="btn" id="yes">Vedel som ✓</button>`}</div>`;
+  bindZoom();
+  document.getElementById('quit').onclick = () => practiceDone();
+  const sh=document.getElementById('show'); if(sh) sh.onclick=()=>{ S.rev=true; quiz(); };
+  const sk=document.getElementById('skip'); if(sk) sk.onclick=()=>nextPractice();
+  const y=document.getElementById('yes'); if(y) y.onclick=()=>{ record(it,true); S.cnt++; S.okN++; save(); nextPractice(); };
+  const n=document.getElementById('no'); if(n) n.onclick=()=>{ record(it,false); S.cnt++; save(); nextPractice(); };
+}
+function practiceDone(){
+  if(!S || !S.cnt){ go('practice'); return; }
+  app.innerHTML = `<h1>Hotovo</h1><div class="card center"><div class="big">${S.okN}/${S.cnt}</div><p class="muted">úplne správnych odpovedí</p></div>
+  <div class="actions"><button class="btn ghost" id="b1">Späť</button><button class="btn" id="b2">Pokračovať ďalej</button></div>`;
+  document.getElementById('b1').onclick = () => go('practice');
+  document.getElementById('b2').onclick = () => { if(S.i < S.list.length){ S.cnt=0; S.okN=0; quiz(); } else go('practice'); };
+  if(S.i >= S.list.length) document.getElementById('b2').textContent = 'Nové precvičovanie';
+}
+
+/* ---------- TEST SETUP ---------- */
+const TESTS = [
+  {id:'full', name:'Ako na prijímačkach', n:100, min:150, desc:'100 biológia + 100 chémia · 150 minút · max. 800 b.'},
+  {id:'half', name:'Polovičný test', n:50, min:75, desc:'50 + 50 otázok · 75 minút · max. 400 b.'},
+  {id:'short', name:'Krátky test', n:20, min:30, desc:'20 + 20 otázok · 30 minút · max. 160 b.'},
+];
+function test(){
+  setTheme('bio');
+  const hist = P.tests.slice(-8).reverse();
+  app.innerHTML = `<h1>Ostrý test</h1>
+  <p class="sub">Na skúške je 200 otázok (100 z biológie a 100 z chémie) na 150 minút. Za každú otázku je 0 – 4 body, maximum je 800 bodov. Správnych odpovedí môže byť viac alebo aj žiadna.</p>
+  ${P.run?`<div class="card row"><div class="grow"><b>Máš rozpracovaný test</b><div class="muted small">Zostáva ${fmtTime(P.run.end-Date.now())}</div></div><button class="btn" id="resume">Pokračovať</button></div>`:''}
+  ${TESTS.map(t=>`<button class="card row" style="width:100%;text-align:left" data-t="${t.id}"><div class="grow"><b>${t.name}</b><div class="muted small">${t.desc}</div></div><span style="font-size:22px;color:var(--acc)">›</span></button>`).join('')}
+  <p class="muted small">Modelové otázky v knihe majú 8 možností (a – h). Každú správne posúdenú možnosť (označenú alebo neoznačenú) počítame za ½ bodu, takže otázka má rovnako ako na skúške 0 – 4 body. Výpočtové príklady a vyčísľovanie rovníc v teste nie sú.</p>
+  ${hist.length?`<h2>História</h2><div class="card">${hist.map(h=>`<div class="kv"><span>${new Date(h.d).toLocaleDateString('sk-SK')} · ${h.len} ot.</span><b>${pts(h.p)} / ${h.max} b. <span class="muted small">(${Math.round(100*h.p/h.max)} %)</span></b></div>`).join('')}</div>`:''}`;
+  app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+    if(P.run && !confirmInline(b, 'Rozpracovaný test sa zahodí. Ťukni znova pre potvrdenie.')) return;
+    startTest(TESTS.find(t=>t.id===b.dataset.t));
+  });
+  const r=document.getElementById('resume'); if(r) r.onclick=()=>go('testrun');
+}
+function confirmInline(el, msg){ if(el.dataset.c==='1') return true; el.dataset.c='1'; toast(msg); setTimeout(()=>{el.dataset.c='';},3000); return false; }
+function startTest(t){
+  const pick = s => shuffle(D[s].items.filter(it => isMC(it) && !it.nokey).slice()).slice(0, t.n).sort((a,b)=>a.n-b.n);
+  const list = [...pick('bio'), ...pick('chem')].map(it => [it.s, it.n]);
+  P.run = {id:t.id, len:list.length, list, ans:{}, i:0, start:Date.now(), end:Date.now()+t.min*60000, min:t.min};
+  save(); go('testrun');
+}
+
+/* ---------- TEST RUN ---------- */
+function testrun(o){
+  const R = P.run; if(!R){ go('test'); return; }
+  if(Date.now() >= R.end){ finishTest(true); return; }
+  const [s,n] = R.list[R.i]; const it = QI[s][n];
+  setTheme(s);
+  const sel = R.ans[R.i] || [];
+  const answered = Object.keys(R.ans).length;
+  app.innerHTML = `<div class="top"><div class="qhead">
+      <span class="tag ${s}">${SUBJ[s].short}</span><span class="grow">${R.i+1} / ${R.len}</span>
+      <span class="timer" id="tm">${fmtTime(R.end-Date.now())}</span>
+      <button class="btn soft" style="min-height:36px;padding:6px 12px" id="ov">Prehľad</button></div></div>
+    ${imgHTML(it,true)}${optsHTML(it, sel, false)}
+    <div class="actions"><button class="btn ghost" id="prev" ${R.i?'':'disabled'}>← Späť</button>
+    ${R.i<R.len-1?`<button class="btn" id="nx">Ďalej →</button>`:`<button class="btn" id="fin">Odovzdať</button>`}</div>
+    <p class="muted small center">Zodpovedané ${answered} z ${R.len}. Nechať všetko neoznačené = „žiadna správna“.</p>`;
+  bindZoom();
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => { const L=b.dataset.l; let a=R.ans[R.i]||[]; a = a.includes(L)? a.filter(x=>x!==L) : [...a,L].sort(); R.ans[R.i]=a; save(); b.classList.toggle('sel'); });
+  const mv = d => { R.i=Math.min(R.len-1,Math.max(0,R.i+d)); save(); testrun(); window.scrollTo(0,0); };
+  document.getElementById('prev').onclick = () => mv(-1);
+  const nx=document.getElementById('nx'); if(nx) nx.onclick=()=>mv(1);
+  const fin=document.getElementById('fin'); if(fin) fin.onclick=()=>overview();
+  document.getElementById('ov').onclick = overview;
+  timerInt = setInterval(() => { const el=document.getElementById('tm'); const left=R.end-Date.now(); if(left<=0){ clearInterval(timerInt); finishTest(true); return; } if(el){ el.textContent=fmtTime(left); el.classList.toggle('low', left<5*60000); } }, 1000);
+}
+function overview(){
+  const R=P.run; const m=document.createElement('div'); m.className='modal';
+  m.innerHTML = `<div class="sheet"><div class="row" style="margin-bottom:10px"><b class="grow">Prehľad otázok</b><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="x">Zavrieť</button></div>
+   <p class="muted small" style="margin-top:0">Farebné sú otázky, kde si niečo označil. Ťukni na číslo pre skok.</p>
+   <div class="small muted" style="margin:6px 0">Biológia</div><div class="grid">${R.list.map((q,i)=>q[0]==='bio'?`<button class="gcell ${R.ans[i]&&R.ans[i].length?'ans':''} ${i===R.i?'cur':''}" data-i="${i}">${i+1}</button>`:'').join('')}</div>
+   <div class="small muted" style="margin:12px 0 6px">Chémia</div><div class="grid">${R.list.map((q,i)=>q[0]==='chem'?`<button class="gcell ${R.ans[i]&&R.ans[i].length?'ans':''} ${i===R.i?'cur':''}" data-i="${i}">${i+1}</button>`:'').join('')}</div>
+   <button class="btn block" style="margin-top:16px" id="sub">Odovzdať test</button>
+   <button class="btn ghost block" style="margin-top:8px" id="ab">Zrušiť test bez hodnotenia</button></div>`;
+  document.body.appendChild(m);
+  const close=()=>m.remove();
+  m.onclick = e => { if(e.target===m) close(); };
+  m.querySelector('#x').onclick = close;
+  m.querySelectorAll('.gcell').forEach(b => b.onclick = () => { R.i=+b.dataset.i; save(); close(); testrun(); window.scrollTo(0,0); });
+  m.querySelector('#sub').onclick = function(){ if(!confirmInline(this,'Ťukni ešte raz pre odovzdanie')) return; close(); finishTest(false); };
+  m.querySelector('#ab').onclick = function(){ if(!confirmInline(this,'Ťukni ešte raz – test sa zahodí')) return; close(); P.run=null; save(); go('test'); };
+}
+function finishTest(timeout){
+  clearInterval(timerInt);
+  const R=P.run; if(!R) return go('test');
+  const per = R.list.map(([s,n],i) => { const it=QI[s][n]; const sel=R.ans[i]||[]; const k=judge(it,sel); record(it, k===8); return {s,n,sel,k}; });
+  const sum = s => per.filter(x=>s==null||x.s===s).reduce((a,x)=>a+x.k/2,0);
+  const res = {d:Date.now(), id:R.id, len:R.len, max:R.len*4, p:sum(), bio:sum('bio'), chem:sum('chem'), dur:Math.min(Date.now(),R.end)-R.start, to:timeout, per};
+  P.tests.push({d:res.d,id:res.id,len:res.len,max:res.max,p:res.p,bio:res.bio,chem:res.chem,dur:res.dur});
+  if(P.tests.length>60) P.tests=P.tests.slice(-60);
+  P.run=null; P.last=res; save();
+  go('result');
+}
+
+/* ---------- RESULT ---------- */
+function result(){
+  const r=P.last; if(!r){ go('test'); return; }
+  setTheme('bio');
+  const half=r.len/2, full=r.per.filter(x=>x.k===8).length;
+  const cls = x => x.k===8?'g-ok':x.k>=6?'g-part':'g-bad';
+  app.innerHTML = `<h1>Výsledok testu</h1>${r.to?'<p class="sub">Čas vypršal, test sa odovzdal automaticky.</p>':''}
+  <div class="card center"><div class="big">${pts(r.p)}</div><div class="muted">z ${r.max} bodov · ${Math.round(100*r.p/r.max)} %</div></div>
+  <div class="card">
+    <div class="kv"><span>Biológia</span><b>${pts(r.bio)} / ${half*4} b.</b></div>
+    <div class="kv"><span>Chémia</span><b>${pts(r.chem)} / ${half*4} b.</b></div>
+    <div class="kv"><span>Úplne správne otázky</span><b>${full} z ${r.len}</b></div>
+    <div class="kv"><span>Čas</span><b>${fmtTime(r.dur)}</b></div>
+  </div>
+  <h2>Prejdi si odpovede</h2>
+  <p class="muted small" style="margin:0 2px 8px">Zelená = úplne správne, žltá = 6 – 7 z 8 možností, červená = horšie.</p>
+  <div class="card"><div class="grid">${r.per.map((x,i)=>`<button class="gcell ${cls(x)}" data-i="${i}">${i+1}</button>`).join('')}</div></div>
+  <div class="actions"><button class="btn ghost" id="rv">Prejsť chyby</button><button class="btn" id="nw">Nový test</button></div>`;
+  app.querySelectorAll('.gcell').forEach(b => b.onclick = () => review(+b.dataset.i, false));
+  document.getElementById('rv').onclick = () => { const i = r.per.findIndex(x=>x.k<8); if(i<0) toast('Žiadne chyby 🎉'); else review(i, true); };
+  document.getElementById('nw').onclick = () => go('test');
+}
+function review(i, onlyBad){
+  const r=P.last, x=r.per[i], it=QI[x.s][x.n];
+  setTheme(x.s);
+  const idxs = r.per.map((y,j)=>j).filter(j => !onlyBad || r.per[j].k<8);
+  const pos = idxs.indexOf(i);
+  app.innerHTML = `<div class="top"><div class="qhead"><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="bk">✕</button>
+   <span class="tag ${x.s}">${SUBJ[x.s].short}</span><span class="grow">Test ${i+1}/${r.len} · otázka ${x.n}</span><span>${pos+1}/${idxs.length}</span></div></div>
+   ${imgHTML(it,true)}${optsHTML(it, x.sel, true)}
+   <div class="res ${x.k===8?'ok':'bad'}"><b>${pts(x.k/2)} z 4 b.</b> · Správne: <b>${it.key?[...it.key].join(', '):'žiadna'}</b> · Tvoje: <b>${x.sel.length?x.sel.join(', '):'nič'}</b></div>
+   <div class="actions"><button class="btn ghost" id="pv" ${pos>0?'':'disabled'}>← Predošlá</button><button class="btn" id="nx" ${pos<idxs.length-1?'':'disabled'}>Ďalšia →</button></div>`;
+  bindZoom();
+  document.getElementById('bk').onclick = () => go('result');
+  document.getElementById('pv').onclick = () => { review(idxs[pos-1], onlyBad); window.scrollTo(0,0); };
+  document.getElementById('nx').onclick = () => { review(idxs[pos+1], onlyBad); window.scrollTo(0,0); };
+}
+
+/* ---------- STATS ---------- */
+function stats(){
+  setTheme('bio');
+  const t = P.tests;
+  const best = t.length ? t.reduce((a,b)=> (b.p/b.max > a.p/a.max ? b : a)) : null;
+  const block = s => { const c=counts(s); return `<h2>${SUBJ[s].name}</h2><div class="card">
+     <div class="kv"><span>Prejdené otázky</span><b>${c.seen} / ${c.total}</b></div>
+     <div class="kv"><span>Zvládnuté (2× po sebe správne)</span><b>${c.mast}</b></div>
+     <div class="kv"><span>Naposledy zle</span><b>${c.wrong}</b></div>
+     ${D[s].sections.map((x,i)=>{ const k=counts(s,i); const m=100*k.mast/k.total, w=100*k.wrong/k.total, o=100*(k.seen-k.mast-k.wrong)/k.total;
+       return `<div class="sect"><div class="t"><b>${esc(x.name)}</b><span>${k.mast} / ${k.total}</span></div>
+       <div class="pbar"><i style="width:${m}%;background:var(--ok)"></i><i style="width:${o}%;background:var(--acc);opacity:.45"></i><i style="width:${w}%;background:var(--bad)"></i></div></div>`; }).join('')}
+   </div>`; };
+  app.innerHTML = `<h1>Štatistiky</h1>
+   <div class="legend" style="margin:4px 2px 0"><span><i style="background:var(--ok)"></i>zvládnuté</span><span><i style="background:var(--acc);opacity:.45"></i>rozpracované</span><span><i style="background:var(--bad)"></i>naposledy zle</span></div>
+   ${block('bio')}${block('chem')}
+   <h2>Testy</h2><div class="card">
+     <div class="kv"><span>Počet testov</span><b>${t.length}</b></div>
+     ${best?`<div class="kv"><span>Najlepší výsledok</span><b>${Math.round(100*best.p/best.max)} % (${pts(best.p)}/${best.max})</b></div>`:''}
+     ${t.length?`<div class="kv"><span>Priemer</span><b>${Math.round(100*t.reduce((a,b)=>a+b.p/b.max,0)/t.length)} %</b></div>`:''}
+   </div>
+   <h2>Záloha pokroku</h2>
+   <div class="card"><p class="small muted" style="margin-top:0">Pokrok je uložený len v tomto prehliadači. Ak chceš pokračovať na inom zariadení, skopíruj si zálohu a vlož ju tam.</p>
+   <div class="actions" style="margin-top:0"><button class="btn soft" id="ex">Skopírovať zálohu</button><button class="btn soft" id="im">Vložiť zálohu</button></div>
+   <button class="btn ghost block" style="margin-top:10px" id="rs">Vymazať celý pokrok</button></div>`;
+  document.getElementById('ex').onclick = exportP;
+  document.getElementById('im').onclick = importP;
+  document.getElementById('rs').onclick = function(){ if(!confirmInline(this,'Ťukni ešte raz – všetko sa vymaže')) return; P=blank(); save(); stats(); toast('Pokrok vymazaný'); };
+}
+function exportP(){
+  const data = JSON.stringify({q:P.q, tests:P.tests});
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="sheet"><b>Záloha pokroku</b><p class="small muted">Text sa skopíroval do schránky. Ak nie, označ ho a skopíruj ručne.</p><textarea readonly>${esc(data)}</textarea><button class="btn block" style="margin-top:10px">Zavrieť</button></div>`;
+  document.body.appendChild(m); m.querySelector('button').onclick=()=>m.remove();
+  const ta=m.querySelector('textarea'); ta.focus(); ta.select();
+  try{ navigator.clipboard.writeText(data).then(()=>toast('Skopírované'),()=>{}); }catch(e){}
+}
+function importP(){
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="sheet"><b>Vložiť zálohu</b><p class="small muted">Vlož text zálohy. Pokrok z nej sa spojí s tým, čo je už tu.</p><textarea placeholder='{"q":…}'></textarea>
+   <div class="actions"><button class="btn ghost" id="c">Zrušiť</button><button class="btn" id="o">Načítať</button></div></div>`;
+  document.body.appendChild(m);
+  m.querySelector('#c').onclick=()=>m.remove();
+  m.querySelector('#o').onclick=()=>{ try{ const d=JSON.parse(m.querySelector('textarea').value);
+      for(const [k,v] of Object.entries(d.q||{})){ const cur=P.q[k]; if(!cur || (v.t||0)>(cur.t||0)) P.q[k]=v; }
+      const seen=new Set(P.tests.map(x=>x.d)); for(const x of (d.tests||[])) if(!seen.has(x.d)) P.tests.push(x);
+      P.tests.sort((a,b)=>a.d-b.d); save(); m.remove(); toast('Záloha načítaná'); stats();
+    }catch(e){ toast('Text zálohy nie je platný'); } };
+}
+
+/* ---------- keyboard (computer) ---------- */
+document.addEventListener('keydown', e => {
+  if(e.target.tagName==='TEXTAREA' || document.querySelector('.modal')) return;
+  const k = e.key.toLowerCase();
+  if(LET.includes(k) && k.length===1){ const b=app.querySelector(`.opt[data-l="${k}"]:not([disabled])`); if(b){ b.click(); e.preventDefault(); } }
+  else if(k==='enter'){ const b=document.getElementById('eval')||document.getElementById('next')||document.getElementById('show')||document.getElementById('nx'); if(b && !b.disabled){ b.click(); e.preventDefault(); } }
+  else if(k==='arrowright'){ const b=document.getElementById('nx'); if(b && !b.disabled) b.click(); }
+  else if(k==='arrowleft'){ const b=document.getElementById('prev')||document.getElementById('pv'); if(b && !b.disabled) b.click(); }
+});
+
+window.__T = {D, QI, judge, imgSrc};
+boot();
+})();
+</script>
+</body>
+</html>
