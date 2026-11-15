@@ -25,7 +25,7 @@
   :root{--bg:#0e1419;--card:#172028;--ink:#e6edf3;--muted:#93a1ae;--line:#2a3743;
   --bio:#2dd4bf;--bio-soft:#123a36;--chem:#a5b4fc;--chem-soft:#24264d;
   --ok:#4ade80;--ok-soft:#14321f;--bad:#fb923c;--bad-soft:#3a2312;--miss:#fbbf24;}
-  .qimg img{filter:invert(.92) hue-rotate(180deg)}
+  .qimg .wrap > img{filter:invert(.92) hue-rotate(180deg)}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
@@ -74,11 +74,29 @@ nav button.on{color:var(--acc);font-weight:600}
 .qimg{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:10px;overflow-x:auto;position:relative}
 @media (prefers-color-scheme:dark){.qimg{background:#121a21}}
 .qimg .wrap{position:relative;display:inline-block;width:100%}
-.qimg img{display:block;width:100%;height:auto;image-rendering:auto}
+.qimg .wrap > img{display:block;width:100%;height:auto;image-rendering:auto}
 .qimg.zoom .wrap{width:auto}
-.qimg.zoom img{width:auto;max-width:none;height:auto}
+.qimg.zoom .wrap > img{width:auto;max-width:none;height:auto}
 .mask{position:absolute;background:var(--acc-soft);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:12px;font-weight:700;overflow:hidden}
 .hint{font-size:12px;color:var(--muted);text-align:right;margin:4px 2px 0}
+.slice{position:relative;overflow:hidden;background:#fff;max-width:none}
+.slice img{position:absolute;display:block;max-width:none;height:auto}
+.slice i{position:absolute;background:#fff}
+@media (prefers-color-scheme:dark){.slice{filter:invert(.92) hue-rotate(180deg)} .qimg.split{background:#ebebeb}}
+.qimg.split{padding:12px 10px}
+.qimg.zoom .slice{max-width:none}
+.orows{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.orow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px 8px 8px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line),var(--shadow);overflow-x:auto;position:relative}
+.orow .ol{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--line)}
+.orow .ob{flex:1;min-width:0;background:#fff;border-radius:6px;padding:4px 4px}
+.orow.sel{box-shadow:inset 0 0 0 2.5px var(--acc)}
+.orow.sel .ol{background:var(--acc);color:#fff;box-shadow:none}
+.orow.r-ok{box-shadow:inset 0 0 0 2.5px var(--ok)} .orow.r-ok .ol{background:var(--ok);color:#fff;box-shadow:none}
+.orow.r-miss{box-shadow:inset 0 0 0 2.5px var(--ok);background:var(--ok-soft)} .orow.r-miss .ol{background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 2px var(--ok)}
+.orow.r-bad{box-shadow:inset 0 0 0 2.5px var(--bad);background:var(--bad-soft)} .orow.r-bad .ol{background:var(--bad);color:#fff;box-shadow:none}
+.orow.r-neu{opacity:.6}
+.orow .tg{flex:none;font-size:11px;font-weight:700}
+.orow.r-miss .tg{color:var(--ok)} .orow.r-bad .tg{color:var(--bad)}
 .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
 .opt{height:58px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line),var(--shadow);font-size:22px;font-weight:700;position:relative}
 .opt.sel{background:var(--acc);color:#fff;box-shadow:none}
@@ -153,7 +171,7 @@ function save(){ try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){
 /* ---------- data ---------- */
 function ingest(d){
   D[d.subject] = d; QI[d.subject] = {};
-  d.items = d.q.map(r => ({s:d.subject, n:r[0], img:r[1], w:r[2], h:r[3], key:(r[6]?'':r[4]), mask:r[5], nokey:!!r[6],
+  d.items = d.q.map(r => ({s:d.subject, n:r[0], img:r[1], w:r[2], h:r[3], key:(r[6]?'':r[4]), mask:r[5], nokey:!!r[6], g:r[7]||null,
     sect: d.sections.findIndex(x => r[0] >= x.from && r[0] <= x.to)}));
   d.items.forEach(it => QI[d.subject][it.n] = it);
 }
@@ -166,7 +184,7 @@ function ingestBundle(buf){
   for(const s of ['bio','chem']){
     const d = head[s];
     D[s] = d; QI[s] = {};
-    d.items = d.q.map(r => ({s, n:r[0], off:r[1], len:r[2], w:r[3], h:r[4], key:(r[7]?'':r[5]), mask:r[6], nokey:!!r[7],
+    d.items = d.q.map(r => ({s, n:r[0], off:r[1], len:r[2], w:r[3], h:r[4], key:(r[7]?'':r[5]), mask:r[6], nokey:!!r[7], g:r[8]||null,
       sect: d.sections.findIndex(x => r[0] >= x.from && r[0] <= x.to)}));
     d.items.forEach(it => QI[s][it.n] = it);
   }
@@ -267,7 +285,7 @@ function home(){
 }
 
 /* ---------- PRACTICE SETUP ---------- */
-let PS = {subj:'bio', sect:null, filter:'all', order:'rand'};
+let PS = {subj:'bio', sect:null, filter:'all', order:'rand', opts:'4'};
 function practice(o){
   if(o?.subj){ PS.subj = o.subj; PS.sect = null; }
   if(o?.calc){ PS.subj='chem'; PS.sect = D.chem.sections.findIndex(x=>x.from===451); PS.filter='all'; }
@@ -291,18 +309,23 @@ function practice(o){
     <div class="chips" id="c-filter">
       ${[['all','Všetky'],['new','Nové'],['wrong','Moje chyby'],['notm','Nezvládnuté']].map(([v,t])=>`<button class="chip ${PS.filter===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
     </div>
+    <div class="small muted" style="margin:14px 0 6px">Možnosti pri otázke</div>
+    <div class="chips" id="c-opts">
+      ${[['4','4 náhodné ako na skúške'],['8','všetkých 8 ako v knihe']].map(([v,t])=>`<button class="chip ${PS.opts===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
+    </div>
     <div class="small muted" style="margin:14px 0 6px">Poradie</div>
     <div class="chips" id="c-order">
       ${[['rand','Náhodne'],['seq','Podľa čísla']].map(([v,t])=>`<button class="chip ${PS.order===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
     </div>
   </div>
   <button class="btn block" id="go" ${pool.length?'':'disabled'}>Začať · ${pool.length} otázok</button>
-  <p class="muted small" style="margin-top:12px">Pri každej otázke označ <b>všetky</b> správne možnosti. Správna môže byť jedna, viac alebo aj žiadna. „Zvládnutá“ je otázka, ktorú si zodpovedal úplne správne dvakrát po sebe.</p>`;
+  <p class="muted small" style="margin-top:12px">Pri režime „4 náhodné“ appka pri každom zobrazení vyberie z 8 možností z knihy náhodne 4, zamieša ich a označí a – d. Správna môže byť jedna, viac, všetky alebo žiadna. Otázky, ktoré sa nedajú bezpečne rozdeliť (napr. so vzorcami vedľa seba), sa ukážu s 8 možnosťami. Pri každej otázke označ <b>všetky</b> správne možnosti. Správna môže byť jedna, viac alebo aj žiadna. „Zvládnutá“ je otázka, ktorú si zodpovedal úplne správne dvakrát po sebe.</p>`;
   const bind = (id, f) => app.querySelectorAll('#'+id+' .chip').forEach(b => b.onclick = () => { f(b.dataset.v); practice(); });
   bind('c-subj', v => { PS.subj=v; PS.sect=null; });
   bind('c-sect', v => PS.sect = v===''?null:+v);
   bind('c-filter', v => PS.filter=v);
   bind('c-order', v => PS.order=v);
+  bind('c-opts', v => PS.opts=v);
   document.getElementById('go').onclick = () => startPractice(PS);
 }
 function buildPool(o){
@@ -317,7 +340,7 @@ function startPractice(o){
   let pool = buildPool(o);
   if(!pool.length){ toast('Žiadne otázky pre tento výber'); return; }
   if(o.order==='rand') shuffle(pool);
-  S = {mode:'practice', list:pool, i:0, sel:[], done:false, okN:0, cnt:0};
+  S = {mode:'practice', list:pool, i:0, sel:[], done:false, okN:0, cnt:0, v:null};
   go('quiz');
 }
 
@@ -327,7 +350,20 @@ function imgHTML(it, revealed){
   return `<div class="qimg ${P.set.zoom?'zoom':''}" id="qimg"><div class="wrap"><img alt="Otázka ${it.n}" src="${imgSrc(it)}" width="${it.w}" height="${it.h}">${masks}</div></div>
   <div class="hint">Ťukni na otázku pre ${P.set.zoom?'zmenšenie':'zväčšenie'}</div>`;
 }
-function bindZoom(){ const q=document.getElementById('qimg'); if(q) q.onclick = () => { P.set.zoom=!P.set.zoom; save(); q.classList.toggle('zoom',P.set.zoom); q.nextElementSibling.textContent='Ťukni na otázku pre '+(P.set.zoom?'zmenšenie':'zväčšenie'); }; }
+let rerender = null;
+function fitSlices(){
+  const q = document.getElementById('qimg'); if(!q || !q.classList.contains('split')) return;
+  const sl = [...document.querySelectorAll('.slice')];
+  if(P.set.zoom){ sl.forEach(s => s.style.width = (+s.dataset.w * 1.6) + 'px'); return; }
+  sl.forEach(s => s.style.width = '1px');
+  let scale = 1.35;
+  sl.forEach(s => { const host = s.parentElement; const cs = getComputedStyle(host);
+    const avail = host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    scale = Math.min(scale, avail / +s.dataset.w); });
+  sl.forEach(s => s.style.width = Math.floor(+s.dataset.w * scale) + 'px');
+}
+window.addEventListener('resize', fitSlices);
+function bindZoom(){ fitSlices(); const q=document.getElementById('qimg'); if(q) q.onclick = () => { P.set.zoom=!P.set.zoom; save(); if(q.classList.contains('split') && rerender){ const y=window.scrollY; rerender(); window.scrollTo(0,y); return; } q.classList.toggle('zoom',P.set.zoom); q.nextElementSibling.textContent='Ťukni na otázku pre '+(P.set.zoom?'zmenšenie':'zväčšenie'); }; }
 function optsHTML(it, sel, evald){
   return `<div class="opts">${[...LET].map(L => {
     let c = '', tag='';
@@ -335,6 +371,43 @@ function optsHTML(it, sel, evald){
       if(k && s) c='r-ok'; else if(k && !s){ c='r-miss'; tag='<small>chýba</small>'; } else if(!k && s){ c='r-bad'; tag='<small>zle</small>'; } else c='r-neu'; }
     else if(sel.includes(L)) c='sel';
     return `<button class="opt ${c}" data-l="${L}" ${evald?'disabled':''}>${L}${tag}</button>`; }).join('')}</div>`;
+}
+/* ---------- 4-of-8 variants ---------- */
+function makeVariant(it, mode){ return (it.g && mode !== '8') ? {sub: shuffle([...LET]).slice(0,4)} : {sub:null}; }
+function vLetters(v){ return v.sub ? 'abcd' : LET; }
+function vCorrect(it, v){ return v.sub ? v.sub.map((o,i)=> it.key.includes(o) ? 'abcd'[i] : '').join('') : it.key; }
+function vScore(it, v, sel){
+  const Ls = vLetters(v), cor = vCorrect(it, v); let k = 0;
+  for(const L of Ls){ if(sel.includes(L) === cor.includes(L)) k++; }
+  return {k, n: Ls.length, p: v.sub ? k : k/2, full: k === Ls.length};
+}
+function sliceHTML(it, r, masks){
+  const [x,y,w,h] = r, W = it.w;
+  const z = `width:${w}px;`;
+  const ms = (masks||[]).map(m => `<i style="left:${(m[0]-x)/w*100}%;top:${(m[1]-y)/h*100}%;width:${m[2]/w*100}%;height:${m[3]/h*100}%"></i>`).join('');
+  return `<div class="slice" data-w="${w}" data-cw="${W}" style="${z}aspect-ratio:${w}/${h}"><img alt="" src="${imgSrc(it)}" style="width:${W/w*100}%;left:${-x/w*100}%;top:${-y/h*100}%">${ms}</div>`;
+}
+function splitHTML(it, v, sel, evald){
+  const g = it.g, stem = [0, 0, g[3] || it.w, g[0]];
+  const cor = vCorrect(it, v);
+  let h = `<div class="qimg split ${P.set.zoom?'zoom':''}" id="qimg">${sliceHTML(it, stem, g[1][2]>0 ? [g[1]] : [])}</div>
+    <div class="hint">Ťukni na zadanie pre ${P.set.zoom?'zmenšenie':'zväčšenie'}</div><div class="orows">`;
+  v.sub.forEach((o, i) => {
+    const L = 'abcd'[i], q = g[2][LET.indexOf(o)];
+    const r = [q[0], q[1], q[2], q[3]], m = [[q[0]-0.5, q[1]+q[5], q[4]+0.5, q[6]], ...(q[7]||[])];
+    let c = '', tag = '';
+    if(evald){ const k = cor.includes(L), s = sel.includes(L);
+      if(k && s) c='r-ok'; else if(k && !s){ c='r-miss'; tag='chýba'; } else if(!k && s){ c='r-bad'; tag='zle'; } else c='r-neu'; }
+    else if(sel.includes(L)) c='sel';
+    h += `<button class="orow ${c}" data-l="${L}" ${evald?'disabled':''}><span class="ol">${L}</span><div class="ob">${sliceHTML(it, r, m)}</div>${tag?`<span class="tg">${tag}</span>`:''}</button>`;
+  });
+  return h + '</div>';
+}
+function questionHTML(it, v, sel, evald){
+  return v.sub ? splitHTML(it, v, sel, evald) : imgHTML(it, true) + optsHTML(it, sel, evald);
+}
+function bindOpts(onToggle){
+  app.querySelectorAll('.opt, .orow').forEach(b => b.onclick = () => { if(b.disabled) return; const L=b.dataset.l; const on = onToggle(L); b.classList.toggle('sel', on); });
 }
 function sectName(it){ return D[it.s].sections[it.sect]?.name || ''; }
 
@@ -344,28 +417,31 @@ function quiz(){
   if(!it){ return practiceDone(); }
   setTheme(it.s);
   const head = `<div class="top"><div class="qhead"><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="quit">✕</button>
-    <span class="tag ${it.s}">${SUBJ[it.s].short}</span><span class="grow">Otázka ${it.n} · ${esc(sectName(it))}</span><span>${S.i+1}/${S.list.length}</span></div></div>`;
+    <span class="tag ${it.s}">${SUBJ[it.s].short}</span><span class="grow">${(it.g && PS.opts!=='8' && isMC(it)) ? '' : 'Otázka '+it.n+' · '}${esc(sectName(it))}</span><span>${S.i+1}/${S.list.length}</span></div></div>`;
   if(!isMC(it)) return calcCard(it, head);
+  if(!S.v) S.v = makeVariant(it, PS.opts);
+  const v = S.v;
   const ev = S.done;
   let res = '';
   if(ev){
-    const k = judge(it, S.sel), full = k===8;
-    res = `<div class="res ${full?'ok':'bad'}"><b>${full?'Správne!':'Nie celkom'}</b> · ${k}/8 možností správne · ${pts(k/2)} z 4 b.<br>
-      <span class="small">Správne odpovede: <b>${it.key ? [...it.key].join(', ') : 'žiadna'}</b></span>${it.nokey?'<br><span class="small">Pozor: v kľúči knihy je pri tejto otázke prázdne miesto, preto ju appka berie ako „žiadna správna“.</span>':''}</div>
+    const sc = vScore(it, v, S.sel), cor = vCorrect(it, v);
+    res = `<div class="res ${sc.full?'ok':'bad'}"><b>${sc.full?'Správne!':'Nie celkom'}</b> · ${sc.k}/${sc.n} možností správne · ${pts(sc.p)} z 4 b.<br>
+      <span class="small">Správne odpovede: <b>${cor ? [...cor].join(', ') : 'žiadna'}</b>${v.sub?` · otázka č. ${it.n} v knihe`:''}</span>${it.nokey?'<br><span class="small">Pozor: v kľúči knihy je pri tejto otázke prázdne miesto, preto ju appka berie ako „žiadna správna“.</span>':''}</div>
       <div class="legend"><span><i style="background:var(--ok)"></i>správne označená</span><span><i style="background:var(--ok-soft);box-shadow:inset 0 0 0 2px var(--ok)"></i>mala byť označená</span><span><i style="background:var(--bad)"></i>označená zle</span></div>`;
   }
-  app.innerHTML = head + imgHTML(it, true) + optsHTML(it, S.sel, ev) + res +
+  rerender = quiz;
+  app.innerHTML = head + questionHTML(it, v, S.sel, ev) + res +
     `<div class="actions">${ev ? `<button class="btn" id="next">Ďalšia otázka →</button>` :
       `<button class="btn ghost" id="skip">Preskočiť</button><button class="btn" id="eval">Vyhodnotiť</button>`}</div>`;
   bindZoom();
   document.getElementById('quit').onclick = () => practiceDone();
-  app.querySelectorAll('.opt').forEach(b => b.onclick = () => { const L=b.dataset.l; S.sel = S.sel.includes(L)? S.sel.filter(x=>x!==L) : [...S.sel, L].sort(); b.classList.toggle('sel', S.sel.includes(L)); const e=document.getElementById('eval');  });
+  if(!ev) bindOpts(L => { S.sel = S.sel.includes(L)? S.sel.filter(x=>x!==L) : [...S.sel, L].sort(); return S.sel.includes(L); });
   const e = document.getElementById('eval'); if(e) e.onclick = evalPractice;
-  const sk = document.getElementById('skip'); if(sk) sk.onclick = () => { S.i++; S.sel=[]; S.done=false; quiz(); window.scrollTo(0,0); };
+  const sk = document.getElementById('skip'); if(sk) sk.onclick = () => { S.i++; S.sel=[]; S.done=false; S.v=null; quiz(); window.scrollTo(0,0); };
   const n = document.getElementById('next'); if(n) n.onclick = nextPractice;
 }
-function evalPractice(){ const it=S.list[S.i]; const ok = judge(it,S.sel)===8; record(it, ok); S.cnt++; if(ok) S.okN++; S.done=true; save(); quiz(); }
-function nextPractice(){ S.i++; S.sel=[]; S.done=false; S.rev=false; quiz(); window.scrollTo(0,0); }
+function evalPractice(){ const it=S.list[S.i]; const ok = vScore(it, S.v, S.sel).full; record(it, ok); S.cnt++; if(ok) S.okN++; S.done=true; save(); quiz(); }
+function nextPractice(){ S.i++; S.sel=[]; S.done=false; S.rev=false; S.v=null; quiz(); window.scrollTo(0,0); }
 function calcCard(it, head){
   const rev = !!S.rev;
   app.innerHTML = head + `<p class="muted small" style="margin:4px 2px 8px">Vypočítaj a potom si skontroluj výsledok.${it.mask?'':' (Výsledok je uvedený priamo v zadaní.)'}</p>` + imgHTML(it, rev) +
@@ -400,7 +476,7 @@ function test(){
   <p class="sub">Na skúške je 200 otázok (100 z biológie a 100 z chémie) na 150 minút. Za každú otázku je 0 – 4 body, maximum je 800 bodov. Správnych odpovedí môže byť viac alebo aj žiadna.</p>
   ${P.run?`<div class="card row"><div class="grow"><b>Máš rozpracovaný test</b><div class="muted small">Zostáva ${fmtTime(P.run.end-Date.now())}</div></div><button class="btn" id="resume">Pokračovať</button></div>`:''}
   ${TESTS.map(t=>`<button class="card row" style="width:100%;text-align:left" data-t="${t.id}"><div class="grow"><b>${t.name}</b><div class="muted small">${t.desc}</div></div><span style="font-size:22px;color:var(--acc)">›</span></button>`).join('')}
-  <p class="muted small">Modelové otázky v knihe majú 8 možností (a – h). Každú správne posúdenú možnosť (označenú alebo neoznačenú) počítame za ½ bodu, takže otázka má rovnako ako na skúške 0 – 4 body. Výpočtové príklady a vyčísľovanie rovníc v teste nie sú.</p>
+  <p class="muted small">Ako na skúške má každá otázka 4 možnosti a – d, ktoré appka vyberie náhodne z 8 možností v knihe. Za každú správne posúdenú možnosť (označenú aj neoznačenú) je 1 bod, takže otázka má 0 – 4 body. Pár otázok, ktoré sa nedali bezpečne rozdeliť, má 8 možností po ½ bode. Výpočtové príklady a vyčísľovanie rovníc v teste nie sú.</p>
   ${hist.length?`<h2>História</h2><div class="card">${hist.map(h=>`<div class="kv"><span>${new Date(h.d).toLocaleDateString('sk-SK')} · ${h.len} ot.</span><b>${pts(h.p)} / ${h.max} b. <span class="muted small">(${Math.round(100*h.p/h.max)} %)</span></b></div>`).join('')}</div>`:''}`;
   app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
     if(P.run && !confirmInline(b, 'Rozpracovaný test sa zahodí. Ťukni znova pre potvrdenie.')) return;
@@ -411,7 +487,7 @@ function test(){
 function confirmInline(el, msg){ if(el.dataset.c==='1') return true; el.dataset.c='1'; toast(msg); setTimeout(()=>{el.dataset.c='';},3000); return false; }
 function startTest(t){
   const pick = s => shuffle(D[s].items.filter(it => isMC(it) && !it.nokey).slice()).slice(0, t.n).sort((a,b)=>a.n-b.n);
-  const list = [...pick('bio'), ...pick('chem')].map(it => [it.s, it.n]);
+  const list = [...pick('bio'), ...pick('chem')].map(it => [it.s, it.n, makeVariant(it, '4').sub]);
   P.run = {id:t.id, len:list.length, list, ans:{}, i:0, start:Date.now(), end:Date.now()+t.min*60000, min:t.min};
   save(); go('testrun');
 }
@@ -420,20 +496,21 @@ function startTest(t){
 function testrun(o){
   const R = P.run; if(!R){ go('test'); return; }
   if(Date.now() >= R.end){ finishTest(true); return; }
-  const [s,n] = R.list[R.i]; const it = QI[s][n];
+  const [s,n,sub] = R.list[R.i]; const it = QI[s][n]; const v = {sub: sub||null};
   setTheme(s);
+  rerender = testrun;
   const sel = R.ans[R.i] || [];
   const answered = Object.keys(R.ans).length;
   app.innerHTML = `<div class="top"><div class="qhead">
       <span class="tag ${s}">${SUBJ[s].short}</span><span class="grow">${R.i+1} / ${R.len}</span>
       <span class="timer" id="tm">${fmtTime(R.end-Date.now())}</span>
       <button class="btn soft" style="min-height:36px;padding:6px 12px" id="ov">Prehľad</button></div></div>
-    ${imgHTML(it,true)}${optsHTML(it, sel, false)}
+    ${questionHTML(it, v, sel, false)}
     <div class="actions"><button class="btn ghost" id="prev" ${R.i?'':'disabled'}>← Späť</button>
     ${R.i<R.len-1?`<button class="btn" id="nx">Ďalej →</button>`:`<button class="btn" id="fin">Odovzdať</button>`}</div>
     <p class="muted small center">Zodpovedané ${answered} z ${R.len}. Nechať všetko neoznačené = „žiadna správna“.</p>`;
   bindZoom();
-  app.querySelectorAll('.opt').forEach(b => b.onclick = () => { const L=b.dataset.l; let a=R.ans[R.i]||[]; a = a.includes(L)? a.filter(x=>x!==L) : [...a,L].sort(); R.ans[R.i]=a; save(); b.classList.toggle('sel'); });
+  bindOpts(L => { let a=R.ans[R.i]||[]; a = a.includes(L)? a.filter(x=>x!==L) : [...a,L].sort(); R.ans[R.i]=a; save(); return a.includes(L); });
   const mv = d => { R.i=Math.min(R.len-1,Math.max(0,R.i+d)); save(); testrun(); window.scrollTo(0,0); };
   document.getElementById('prev').onclick = () => mv(-1);
   const nx=document.getElementById('nx'); if(nx) nx.onclick=()=>mv(1);
@@ -460,8 +537,8 @@ function overview(){
 function finishTest(timeout){
   clearInterval(timerInt);
   const R=P.run; if(!R) return go('test');
-  const per = R.list.map(([s,n],i) => { const it=QI[s][n]; const sel=R.ans[i]||[]; const k=judge(it,sel); record(it, k===8); return {s,n,sel,k}; });
-  const sum = s => per.filter(x=>s==null||x.s===s).reduce((a,x)=>a+x.k/2,0);
+  const per = R.list.map(([s,n,sub],i) => { const it=QI[s][n]; const sel=R.ans[i]||[]; const sc=vScore(it,{sub:sub||null},sel); record(it, sc.full); return {s,n,sub:sub||null,sel,k:sc.k,m:sc.n,p:sc.p}; });
+  const sum = s => per.filter(x=>s==null||x.s===s).reduce((a,x)=>a+x.p,0);
   const res = {d:Date.now(), id:R.id, len:R.len, max:R.len*4, p:sum(), bio:sum('bio'), chem:sum('chem'), dur:Math.min(Date.now(),R.end)-R.start, to:timeout, per};
   P.tests.push({d:res.d,id:res.id,len:res.len,max:res.max,p:res.p,bio:res.bio,chem:res.chem,dur:res.dur});
   if(P.tests.length>60) P.tests=P.tests.slice(-60);
@@ -472,9 +549,10 @@ function finishTest(timeout){
 /* ---------- RESULT ---------- */
 function result(){
   const r=P.last; if(!r){ go('test'); return; }
+  r.per.forEach(x => { if(x.p === undefined) x.p = x.k/2; });
   setTheme('bio');
-  const half=r.len/2, full=r.per.filter(x=>x.k===8).length;
-  const cls = x => x.k===8?'g-ok':x.k>=6?'g-part':'g-bad';
+  const half=r.len/2, full=r.per.filter(x=>x.p===4).length;
+  const cls = x => x.p===4?'g-ok':x.p>=3?'g-part':'g-bad';
   app.innerHTML = `<h1>Výsledok testu</h1>${r.to?'<p class="sub">Čas vypršal, test sa odovzdal automaticky.</p>':''}
   <div class="card center"><div class="big">${pts(r.p)}</div><div class="muted">z ${r.max} bodov · ${Math.round(100*r.p/r.max)} %</div></div>
   <div class="card">
@@ -484,22 +562,24 @@ function result(){
     <div class="kv"><span>Čas</span><b>${fmtTime(r.dur)}</b></div>
   </div>
   <h2>Prejdi si odpovede</h2>
-  <p class="muted small" style="margin:0 2px 8px">Zelená = úplne správne, žltá = 6 – 7 z 8 možností, červená = horšie.</p>
+  <p class="muted small" style="margin:0 2px 8px">Zelená = 4 body, žltá = 3 body, červená = menej.</p>
   <div class="card"><div class="grid">${r.per.map((x,i)=>`<button class="gcell ${cls(x)}" data-i="${i}">${i+1}</button>`).join('')}</div></div>
   <div class="actions"><button class="btn ghost" id="rv">Prejsť chyby</button><button class="btn" id="nw">Nový test</button></div>`;
   app.querySelectorAll('.gcell').forEach(b => b.onclick = () => review(+b.dataset.i, false));
-  document.getElementById('rv').onclick = () => { const i = r.per.findIndex(x=>x.k<8); if(i<0) toast('Žiadne chyby 🎉'); else review(i, true); };
+  document.getElementById('rv').onclick = () => { const i = r.per.findIndex(x=>x.p<4); if(i<0) toast('Žiadne chyby 🎉'); else review(i, true); };
   document.getElementById('nw').onclick = () => go('test');
 }
 function review(i, onlyBad){
   const r=P.last, x=r.per[i], it=QI[x.s][x.n];
   setTheme(x.s);
-  const idxs = r.per.map((y,j)=>j).filter(j => !onlyBad || r.per[j].k<8);
+  const idxs = r.per.map((y,j)=>j).filter(j => !onlyBad || r.per[j].p<4);
+  const v = {sub: x.sub||null}, cor = vCorrect(it, v);
+  rerender = () => review(i, onlyBad);
   const pos = idxs.indexOf(i);
   app.innerHTML = `<div class="top"><div class="qhead"><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="bk">✕</button>
    <span class="tag ${x.s}">${SUBJ[x.s].short}</span><span class="grow">Test ${i+1}/${r.len} · otázka ${x.n}</span><span>${pos+1}/${idxs.length}</span></div></div>
-   ${imgHTML(it,true)}${optsHTML(it, x.sel, true)}
-   <div class="res ${x.k===8?'ok':'bad'}"><b>${pts(x.k/2)} z 4 b.</b> · Správne: <b>${it.key?[...it.key].join(', '):'žiadna'}</b> · Tvoje: <b>${x.sel.length?x.sel.join(', '):'nič'}</b></div>
+   ${questionHTML(it, v, x.sel, true)}
+   <div class="res ${x.p===4?'ok':'bad'}"><b>${pts(x.p)} z 4 b.</b> · Správne: <b>${cor?[...cor].join(', '):'žiadna'}</b> · Tvoje: <b>${x.sel.length?x.sel.join(', '):'nič'}</b></div>
    <div class="actions"><button class="btn ghost" id="pv" ${pos>0?'':'disabled'}>← Predošlá</button><button class="btn" id="nx" ${pos<idxs.length-1?'':'disabled'}>Ďalšia →</button></div>`;
   bindZoom();
   document.getElementById('bk').onclick = () => go('result');
@@ -567,7 +647,7 @@ document.addEventListener('keydown', e => {
   else if(k==='arrowleft'){ const b=document.getElementById('prev')||document.getElementById('pv'); if(b && !b.disabled) b.click(); }
 });
 
-window.__T = {D, QI, judge, imgSrc};
+window.__T = {D, QI, judge, imgSrc, vScore, vCorrect, makeVariant};
 boot();
 })();
 </script>
