@@ -1,9 +1,9 @@
 // Offline cache: everything is stored on the device at install time.
-const CACHE = 'upjs-lf-94b8395175';
+const CACHE = 'upjs-lf-aa6b9fb66e';
 const FILES = ['./', 'index.html', 'loader.js', 'data1.bin', 'data2.bin', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, {cache: 'reload'})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));

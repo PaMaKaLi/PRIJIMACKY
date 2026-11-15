@@ -77,6 +77,8 @@ nav button.on{color:var(--acc);font-weight:600}
 .qimg .wrap > img{display:block;width:100%;height:auto;image-rendering:auto}
 .qimg.zoom .wrap{width:auto}
 .qimg.zoom .wrap > img{width:auto;max-width:none;height:auto}
+.ncov{position:absolute;background:#fff}
+@media (prefers-color-scheme:dark){.ncov{filter:invert(.92) hue-rotate(180deg)}}
 .mask{position:absolute;background:var(--acc-soft);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:12px;font-weight:700;overflow:hidden}
 .hint{font-size:12px;color:var(--muted);text-align:right;margin:4px 2px 0}
 .slice{position:relative;overflow:hidden;background:#fff;max-width:none}
@@ -171,7 +173,7 @@ function save(){ try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){
 /* ---------- data ---------- */
 function ingest(d){
   D[d.subject] = d; QI[d.subject] = {};
-  d.items = d.q.map(r => ({s:d.subject, n:r[0], img:r[1], w:r[2], h:r[3], key:(r[6]?'':r[4]), mask:r[5], nokey:!!r[6], g:r[7]||null,
+  d.items = d.q.map(r => ({s:d.subject, n:r[0], img:r[1], w:r[2], h:r[3], key:(r[6]?'':r[4]), mask:r[5], nokey:!!r[6], g:r[7]||null, nm:r[8]||null,
     sect: d.sections.findIndex(x => r[0] >= x.from && r[0] <= x.to)}));
   d.items.forEach(it => QI[d.subject][it.n] = it);
 }
@@ -184,7 +186,7 @@ function ingestBundle(buf){
   for(const s of ['bio','chem']){
     const d = head[s];
     D[s] = d; QI[s] = {};
-    d.items = d.q.map(r => ({s, n:r[0], off:r[1], len:r[2], w:r[3], h:r[4], key:(r[7]?'':r[5]), mask:r[6], nokey:!!r[7], g:r[8]||null,
+    d.items = d.q.map(r => ({s, n:r[0], off:r[1], len:r[2], w:r[3], h:r[4], key:(r[7]?'':r[5]), mask:r[6], nokey:!!r[7], g:r[8]||null, nm:r[9]||null,
       sect: d.sections.findIndex(x => r[0] >= x.from && r[0] <= x.to)}));
     d.items.forEach(it => QI[s][it.n] = it);
   }
@@ -315,7 +317,7 @@ function practice(o){
     </div>
     <div class="small muted" style="margin:14px 0 6px">Poradie</div>
     <div class="chips" id="c-order">
-      ${[['rand','Náhodne'],['seq','Podľa čísla']].map(([v,t])=>`<button class="chip ${PS.order===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
+      ${[['rand','Náhodne'],['seq','V poradí z knihy']].map(([v,t])=>`<button class="chip ${PS.order===v?'on':''}" data-v="${v}">${t}</button>`).join('')}
     </div>
   </div>
   <button class="btn block" id="go" ${pool.length?'':'disabled'}>Začať · ${pool.length} otázok</button>
@@ -347,7 +349,8 @@ function startPractice(o){
 /* ---------- QUESTION RENDER ---------- */
 function imgHTML(it, revealed){
   const masks = (!revealed && it.mask) ? it.mask.map(m => `<div class="mask" style="left:${m[0]*100}%;top:${m[1]*100}%;width:${m[2]*100}%;height:${m[3]*100}%">?</div>`).join('') : '';
-  return `<div class="qimg ${P.set.zoom?'zoom':''}" id="qimg"><div class="wrap"><img alt="Otázka ${it.n}" src="${imgSrc(it)}" width="${it.w}" height="${it.h}">${masks}</div></div>
+  const nc = it.nm ? `<div class="ncov" style="left:${it.nm[0]/it.w*100}%;top:${it.nm[1]/it.h*100}%;width:${it.nm[2]/it.w*100}%;height:${it.nm[3]/it.h*100}%"></div>` : '';
+  return `<div class="qimg ${P.set.zoom?'zoom':''}" id="qimg"><div class="wrap"><img alt="Otázka" src="${imgSrc(it)}" width="${it.w}" height="${it.h}">${nc}${masks}</div></div>
   <div class="hint">Ťukni na otázku pre ${P.set.zoom?'zmenšenie':'zväčšenie'}</div>`;
 }
 let rerender = null;
@@ -417,7 +420,7 @@ function quiz(){
   if(!it){ return practiceDone(); }
   setTheme(it.s);
   const head = `<div class="top"><div class="qhead"><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="quit">✕</button>
-    <span class="tag ${it.s}">${SUBJ[it.s].short}</span><span class="grow">${(it.g && PS.opts!=='8' && isMC(it)) ? '' : 'Otázka '+it.n+' · '}${esc(sectName(it))}</span><span>${S.i+1}/${S.list.length}</span></div></div>`;
+    <span class="tag ${it.s}">${SUBJ[it.s].short}</span><span class="grow">${esc(sectName(it))}</span><span>${S.i+1}/${S.list.length}</span></div></div>`;
   if(!isMC(it)) return calcCard(it, head);
   if(!S.v) S.v = makeVariant(it, PS.opts);
   const v = S.v;
@@ -426,7 +429,7 @@ function quiz(){
   if(ev){
     const sc = vScore(it, v, S.sel), cor = vCorrect(it, v);
     res = `<div class="res ${sc.full?'ok':'bad'}"><b>${sc.full?'Správne!':'Nie celkom'}</b> · ${sc.k}/${sc.n} možností správne · ${pts(sc.p)} z 4 b.<br>
-      <span class="small">Správne odpovede: <b>${cor ? [...cor].join(', ') : 'žiadna'}</b>${v.sub?` · otázka č. ${it.n} v knihe`:''}</span>${it.nokey?'<br><span class="small">Pozor: v kľúči knihy je pri tejto otázke prázdne miesto, preto ju appka berie ako „žiadna správna“.</span>':''}</div>
+      <span class="small">Správne odpovede: <b>${cor ? [...cor].join(', ') : 'žiadna'}</b></span>${it.nokey?'<br><span class="small">Pozor: v kľúči knihy je pri tejto otázke prázdne miesto, preto ju appka berie ako „žiadna správna“.</span>':''}</div>
       <div class="legend"><span><i style="background:var(--ok)"></i>správne označená</span><span><i style="background:var(--ok-soft);box-shadow:inset 0 0 0 2px var(--ok)"></i>mala byť označená</span><span><i style="background:var(--bad)"></i>označená zle</span></div>`;
   }
   rerender = quiz;
@@ -577,7 +580,7 @@ function review(i, onlyBad){
   rerender = () => review(i, onlyBad);
   const pos = idxs.indexOf(i);
   app.innerHTML = `<div class="top"><div class="qhead"><button class="btn ghost" style="min-height:36px;padding:6px 12px" id="bk">✕</button>
-   <span class="tag ${x.s}">${SUBJ[x.s].short}</span><span class="grow">Test ${i+1}/${r.len} · otázka ${x.n}</span><span>${pos+1}/${idxs.length}</span></div></div>
+   <span class="tag ${x.s}">${SUBJ[x.s].short}</span><span class="grow">Test ${i+1}/${r.len}</span><span>${pos+1}/${idxs.length}</span></div></div>
    ${questionHTML(it, v, x.sel, true)}
    <div class="res ${x.p===4?'ok':'bad'}"><b>${pts(x.p)} z 4 b.</b> · Správne: <b>${cor?[...cor].join(', '):'žiadna'}</b> · Tvoje: <b>${x.sel.length?x.sel.join(', '):'nič'}</b></div>
    <div class="actions"><button class="btn ghost" id="pv" ${pos>0?'':'disabled'}>← Predošlá</button><button class="btn" id="nx" ${pos<idxs.length-1?'':'disabled'}>Ďalšia →</button></div>`;

@@ -2,7 +2,17 @@
 (function(){
   const PK = 'upjs-lf-heslo';
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    // when a new version is installed (first time online after an update), reload once to show it
+    let reloaded = false;
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded) return;
+      reloaded = true; location.reload();
+    });
+    navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(reg => {
+      reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(()=>{}); });
+    }).catch(()=>{});
   }
   function b2s(u8){ return new TextDecoder().decode(u8); }
   async function decrypt(buf, pass){
