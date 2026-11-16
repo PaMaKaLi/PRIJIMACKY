@@ -220,14 +220,29 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.rand
 function key(it){ return it.s+':'+it.n; }
 function st(it){ return P.q[key(it)]; }
 function isMC(it){ return it.key !== null && it.key !== undefined; }
-function mastered(r){ return r && r.k >= 2; }
+// Mastery: questions with options -> every one of the 8 book options judged correctly (bitmask r.o == 255)
+// and the last answer fully correct. Calculation items (no options) and untouched old records -> 2x correct in a row.
+function mastered(r){ if(!r) return false; if(r.o === undefined) return r.k >= 2; return r.o === 255 && r.l === 1; }
 function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
 function judge(it, sel){ // returns number of correctly judged options (0..8)
   let k = 0; for(const L of LET){ if(sel.includes(L) === it.key.includes(L)) k++; } return k;
 }
-function record(it, ok){
+// judged: {ok:[book letters judged correctly], bad:[book letters judged wrongly]} – only the options that were shown
+function record(it, ok, judged){
   const r = P.q[key(it)] || (P.q[key(it)] = {a:0,c:0,k:0,l:0,t:0});
+  if(judged){
+    if(r.o === undefined) r.o = (r.k >= 2) ? 255 : 0;          // previously mastered questions stay mastered
+    for(const L of judged.ok)  r.o |=  (1 << LET.indexOf(L));
+    for(const L of judged.bad) r.o &= ~(1 << LET.indexOf(L));
+  }
   r.a++; if(ok){ r.c++; r.k++; r.l=1; } else { r.k=0; r.l=-1; } r.t = Date.now();
+}
+function judgedOpts(it, v, sel){
+  const out = {ok:[], bad:[]};
+  const shown = v.sub ? v.sub : [...LET];
+  shown.forEach((o, i) => { const L = v.sub ? 'abcd'[i] : o;
+    ((sel.includes(L) === it.key.includes(o)) ? out.ok : out.bad).push(o); });
+  return out;
 }
 function setTheme(s){ document.body.classList.toggle('chem', s==='chem'); }
 function fmtTime(ms){ ms=Math.max(0,ms); const t=Math.floor(ms/1000), h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=t%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0'); }
@@ -321,7 +336,7 @@ function practice(o){
     </div>
   </div>
   <button class="btn block" id="go" ${pool.length?'':'disabled'}>Začať · ${pool.length} otázok</button>
-  <p class="muted small" style="margin-top:12px">Pri režime „4 náhodné“ appka pri každom zobrazení vyberie z 8 možností z knihy náhodne 4, zamieša ich a označí a – d. Správna môže byť jedna, viac, všetky alebo žiadna. Otázky, ktoré sa nedajú bezpečne rozdeliť (napr. so vzorcami vedľa seba), sa ukážu s 8 možnosťami. Pri každej otázke označ <b>všetky</b> správne možnosti. Správna môže byť jedna, viac alebo aj žiadna. „Zvládnutá“ je otázka, ktorú si zodpovedal úplne správne dvakrát po sebe.</p>`;
+  <p class="muted small" style="margin-top:12px">Pri režime „4 náhodné“ appka pri každom zobrazení vyberie z 8 možností z knihy náhodne 4, zamieša ich a označí a – d. Správna môže byť jedna, viac, všetky alebo žiadna. Otázky, ktoré sa nedajú bezpečne rozdeliť (napr. so vzorcami vedľa seba), sa ukážu s 8 možnosťami. Pri každej otázke označ <b>všetky</b> správne možnosti. Správna môže byť jedna, viac alebo aj žiadna. „Zvládnutá“ je otázka, pri ktorej si už každú z jej 8 možností aspoň raz posúdil správne a poslednú odpoveď si mal úplne správnu (výpočty: 2× po sebe správne).</p>`;
   const bind = (id, f) => app.querySelectorAll('#'+id+' .chip').forEach(b => b.onclick = () => { f(b.dataset.v); practice(); });
   bind('c-subj', v => { PS.subj=v; PS.sect=null; });
   bind('c-sect', v => PS.sect = v===''?null:+v);
@@ -443,7 +458,7 @@ function quiz(){
   const sk = document.getElementById('skip'); if(sk) sk.onclick = () => { S.i++; S.sel=[]; S.done=false; S.v=null; quiz(); window.scrollTo(0,0); };
   const n = document.getElementById('next'); if(n) n.onclick = nextPractice;
 }
-function evalPractice(){ const it=S.list[S.i]; const ok = vScore(it, S.v, S.sel).full; record(it, ok); S.cnt++; if(ok) S.okN++; S.done=true; save(); quiz(); }
+function evalPractice(){ const it=S.list[S.i]; const ok = vScore(it, S.v, S.sel).full; record(it, ok, judgedOpts(it, S.v, S.sel)); S.cnt++; if(ok) S.okN++; S.done=true; save(); quiz(); }
 function nextPractice(){ S.i++; S.sel=[]; S.done=false; S.rev=false; S.v=null; quiz(); window.scrollTo(0,0); }
 function calcCard(it, head){
   const rev = !!S.rev;
@@ -540,7 +555,7 @@ function overview(){
 function finishTest(timeout){
   clearInterval(timerInt);
   const R=P.run; if(!R) return go('test');
-  const per = R.list.map(([s,n,sub],i) => { const it=QI[s][n]; const sel=R.ans[i]||[]; const sc=vScore(it,{sub:sub||null},sel); record(it, sc.full); return {s,n,sub:sub||null,sel,k:sc.k,m:sc.n,p:sc.p}; });
+  const per = R.list.map(([s,n,sub],i) => { const it=QI[s][n]; const sel=R.ans[i]||[]; const sc=vScore(it,{sub:sub||null},sel); record(it, sc.full, judgedOpts(it,{sub:sub||null},sel)); return {s,n,sub:sub||null,sel,k:sc.k,m:sc.n,p:sc.p}; });
   const sum = s => per.filter(x=>s==null||x.s===s).reduce((a,x)=>a+x.p,0);
   const res = {d:Date.now(), id:R.id, len:R.len, max:R.len*4, p:sum(), bio:sum('bio'), chem:sum('chem'), dur:Math.min(Date.now(),R.end)-R.start, to:timeout, per};
   P.tests.push({d:res.d,id:res.id,len:res.len,max:res.max,p:res.p,bio:res.bio,chem:res.chem,dur:res.dur});
@@ -597,7 +612,7 @@ function stats(){
   const best = t.length ? t.reduce((a,b)=> (b.p/b.max > a.p/a.max ? b : a)) : null;
   const block = s => { const c=counts(s); return `<h2>${SUBJ[s].name}</h2><div class="card">
      <div class="kv"><span>Prejdené otázky</span><b>${c.seen} / ${c.total}</b></div>
-     <div class="kv"><span>Zvládnuté (2× po sebe správne)</span><b>${c.mast}</b></div>
+     <div class="kv"><span>Zvládnuté (všetkých 8 možností správne)</span><b>${c.mast}</b></div>
      <div class="kv"><span>Naposledy zle</span><b>${c.wrong}</b></div>
      ${D[s].sections.map((x,i)=>{ const k=counts(s,i); const m=100*k.mast/k.total, w=100*k.wrong/k.total, o=100*(k.seen-k.mast-k.wrong)/k.total;
        return `<div class="sect"><div class="t"><b>${esc(x.name)}</b><span>${k.mast} / ${k.total}</span></div>
@@ -650,7 +665,7 @@ document.addEventListener('keydown', e => {
   else if(k==='arrowleft'){ const b=document.getElementById('prev')||document.getElementById('pv'); if(b && !b.disabled) b.click(); }
 });
 
-window.__T = {D, QI, judge, imgSrc, vScore, vCorrect, makeVariant};
+window.__T = {D, QI, judge, imgSrc, vScore, vCorrect, makeVariant, record, mastered, judgedOpts, get P(){return P;}};
 boot();
 })();
 </script>
